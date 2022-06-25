@@ -1,3 +1,4 @@
+from re import A
 from socket import socket
 from kandinsky import display
 import time
@@ -63,17 +64,32 @@ def connection(socket,host,Nom_partie):
     finally:
         socket.close()
 
+
+
 def menu(player):
     pg.init()
-    bg = pg.image.load('Sky.png')
+    
+    color_list = 
+    
+    bg = pg.image.load('sprites/Sky.png')
 
     screen = pg.display.set_mode((bg.get_width(),bg.get_height()))
 
     font = pg.font.Font(None,40)
 
-    button = pg.image.load("button.png")
+    button = pg.image.load("sprites/button.png")
     button = pg.transform.scale(button,(button.get_width()*4,button.get_height()*4))
     button_clicked = False
+    
+    arrowR = pg.image.load("sprites/arrowR.png")
+    arrowR = pg.transform.scale(arrowR,(arrowR.get_width()*4,arrowR.get_height()*4))
+    arrowR.set_colorkey((255,255,255))
+    arrowR_pressed = False
+    
+    arrowL = pg.image.load("sprites/arrowL.png")
+    arrowL = pg.transform.scale(arrowL,(arrowL.get_width()*4,arrowL.get_height()*4))
+    arrowL.set_colorkey((255,255,255))
+    arrowL_pressed = False
 
     text = font.render("Infinit Racer",1,(0,0,0))
 
@@ -87,6 +103,10 @@ def menu(player):
         screen.blit(bg,(0,0))
 
         screen.blit(button,((bg.get_width()/2-(button.get_width()/2),bg.get_height()/2-(button.get_height()/2))))
+        
+        screen.blit(arrowR,(((bg.get_width()/4)*3)-(arrowR.get_width()/2),(bg.get_height()/4)*3-(arrowR.get_height()/2)))
+        
+        screen.blit(arrowL,((bg.get_width()/4)-(arrowL.get_width()/2),((bg.get_height()/4)*3)-(arrowL.get_height()/2)))
 
         screen.blit(text,(bg.get_width()/2-(text.get_width()/2),bg.get_height()/4-(text.get_height()/2)))
 
@@ -107,6 +127,7 @@ def menu(player):
         pg.display.update()
 
     pg.quit()
+
 
 
 def main(player):
@@ -136,17 +157,17 @@ def main(player):
     mod = hres/60
     posx, posy, rot = 51,39.3,-1.57
 
-    sky = pg.image.load('fond.png')
+    sky = pg.image.load('sprites/fond.png')
     #tableau 3d de couleur de l'image
     sky = pg.surfarray.array3d(pg.transform.scale(sky,(360,halfvres*2)))
     #tableau 3d de couleur de l'image
-    floor = pg.surfarray.array3d(pg.image.load('Circuit.png'))
+    floor = pg.surfarray.array3d(pg.image.load('sprites/Circuit.png'))
 
-    map = pg.image.load('Circuit.png')
+    map = pg.image.load('sprites/Circuit.png')
     map = pg.transform.scale(map,(map.get_width()/nbcases*size_map,map.get_height()/nbcases*size_map))
     rec_map = (map.get_width(),map.get_height())
 
-    icon = pg.image.load("icon.png")
+    icon = pg.image.load("sprites/icon.png")
 
     font = pg.font.Font(None,200)
 
@@ -178,7 +199,10 @@ def main(player):
         screen.blit(surface, (0,0))
         screen.blit(map,(0,0))
         screen.blit(texte,(screen.get_width()-texte.get_width(),0))
-        pg.draw.rect(screen,(0,255,0),(((posx)*rec_map[0])//nbcases,((posy-1)*rec_map[1])//nbcases,2,2))
+        
+        size_carree = 4
+        
+        pg.draw.rect(screen,(0,255,0),((((posx)*rec_map[0])-size_carree//2)//nbcases,(((posy)*rec_map[1])-size_carree//2)//nbcases,size_carree,size_carree))
         
         player.sprite.set_colorkey((255,255,255))
 
@@ -228,7 +252,7 @@ def new_frame(posx,posy,rot,frame,sky,floor,shade,hres,halfvres,mod,max):
     return frame
 
 if __name__ == '__main__':
-    player = Car("BlueCar.png","BlueCarBack.png","BlueCarRight.png","BlueCarLeft.png",20)
+    player = Car("sprites/BlueCar.png","sprites/BlueCarBack.png","sprites/BlueCarRight.png","sprites/BlueCarLeft.png",20)
     menu(player)
     pg.quit()
     exit()
