@@ -69,7 +69,7 @@ def connection(socket,host,Nom_partie):
 def menu(player):
     pg.init()
     
-    color_list = 
+    color_list = []
     
     bg = pg.image.load('sprites/Sky.png')
 
