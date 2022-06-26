@@ -1,4 +1,3 @@
-from re import A
 from socket import socket
 from kandinsky import display
 import time
@@ -7,6 +6,19 @@ import numpy as np
 from numba import njit
 
 """
+
+#TODO
+Resaux:
+    Connection
+    Serveur
+    DNS Server
+    
+Jeu:
+    IA (basique) ==> in process(Le_Chatmot)
+    Affichage score plus beau
+    
+
+
 
 methode njit : ~30 fps <== choisi avec un resolution a 4
 
@@ -31,15 +43,15 @@ class Car(pg.sprite.Sprite):
 
         self.velocity = 0
 
-        self.image_menu = pg.image.load(file_menu).convert()
-        self.back = pg.image.load(sprite_back).convert()
+        self.image_menu = pg.image.load(file_menu)
+        self.back = pg.image.load(sprite_back)
         self.rect = (self.back.get_width()*size,self.back.get_height()*size)
         self.back = pg.transform.scale(self.back,self.rect)
 
-        self.img_R = pg.image.load(Right).convert_alpha()
+        self.img_R = pg.image.load(Right)
         self.img_R = pg.transform.scale(self.img_R,self.rect)
 
-        self.img_L = pg.image.load(Left).convert_alpha()
+        self.img_L = pg.image.load(Left)
         self.img_L = pg.transform.scale(self.img_L,self.rect)
 
         self.sprite = self.back.copy()
@@ -66,10 +78,17 @@ def connection(socket,host,Nom_partie):
 
 
 
-def menu(player):
+def menu():
     pg.init()
     
-    color_list = []
+    color_list = ["Blue","Purple","Red","Green","Yellow","Orange"]
+    
+    icon = pg.image.load("sprites/icon.png")
+    pg.display.set_icon(icon)
+    pg.display.set_caption("Infinit Racer / Menu")
+    
+    i = 0
+    i_max = len(color_list)-1
     
     bg = pg.image.load('sprites/Sky.png')
 
@@ -100,17 +119,58 @@ def menu(player):
             if event.type == pg.QUIT:
                 running = False
 
+        #background
         screen.blit(bg,(0,0))
-
-        screen.blit(button,((bg.get_width()/2-(button.get_width()/2),bg.get_height()/2-(button.get_height()/2))))
         
+        pos =  pg.mouse.get_pos()
+        
+        #Bouton Voiture droit
         screen.blit(arrowR,(((bg.get_width()/4)*3)-(arrowR.get_width()/2),(bg.get_height()/4)*3-(arrowR.get_height()/2)))
         
-        screen.blit(arrowL,((bg.get_width()/4)-(arrowL.get_width()/2),((bg.get_height()/4)*3)-(arrowL.get_height()/2)))
+        button_rect = button.get_rect()
+        button_rect.topleft = ((((bg.get_width()/4)*3)-(arrowR.get_width()/2),(bg.get_height()/4)*3-(arrowR.get_height()/2)))
+        
+        if button_rect.collidepoint(pos):
+            if pg.mouse.get_pressed()[0] == 1 and arrowR_pressed == False:
+                arrowR_pressed = True
+                if i+1 > i_max:
+                    i = 0
+                else:
+                    i+= 1
 
+        if pg.mouse.get_pressed()[0] == 0 and arrowR_pressed:
+            arrowR_pressed = False
+        
+        #Bouton Voiture gauche
+        screen.blit(arrowL,((bg.get_width()/4)-(arrowL.get_width()/2),((bg.get_height()/4)*3)-(arrowL.get_height()/2)))
+        
+        button_rect = button.get_rect()
+        button_rect.topleft = (((bg.get_width()/4)-(arrowL.get_width()/2),((bg.get_height()/4)*3)-(arrowL.get_height()/2)))
+        
+        if button_rect.collidepoint(pos):
+            if pg.mouse.get_pressed()[0] == 1 and arrowL_pressed == False:
+                arrowL_pressed = True
+                if i-1 < 0:
+                    i = i_max
+                else:
+                    i-= 1
+
+        if pg.mouse.get_pressed()[0] == 0 and arrowL_pressed:
+            arrowL_pressed = False
+        
+        #Voiture
+        car =  pg.image.load("sprites/"+color_list[i]+"Car.png")
+        car = pg.transform.scale(car,(car.get_width()*4,car.get_height()*4))
+        car = pg.transform.rotozoom(car,90,1)
+        car.set_colorkey((255,255,255))
+        
+        screen.blit(car,((bg.get_width()/2)-(car.get_width()/2),((bg.get_height()/4)*3)-(car.get_height()/2)))
+
+        #Titre Jeu
         screen.blit(text,(bg.get_width()/2-(text.get_width()/2),bg.get_height()/4-(text.get_height()/2)))
 
-        pos =  pg.mouse.get_pos()
+        #BoutonPlay
+        screen.blit(button,((bg.get_width()/2-(button.get_width()/2),bg.get_height()/2-(button.get_height()/2))))
 
         button_rect = button.get_rect()
         button_rect.topleft = ((bg.get_width()/2-(button.get_width()/2),bg.get_height()/2-(button.get_height()/2)))
@@ -119,10 +179,14 @@ def menu(player):
             if pg.mouse.get_pressed()[0] == 1 and button_clicked == False:
                 button_clicked = True
                 pg.quit()
-                main(player)
+                player = Car("sprites/"+color_list[i]+"Car.png","sprites/"+color_list[i]+"CarBack.png","sprites/"+color_list[i]+"CarRight.png","sprites/"+color_list[i]+"CarLeft.png",20)
+                main(player,i)
 
-        if pg.mouse.get_pressed()[0] == 0:
+        if pg.mouse.get_pressed()[0] == 0 and button_clicked:
             button_clicked = False
+
+        pg.display.set_icon(icon)
+        pg.display.set_caption("Infinit Racer / Menu / "+ color_list[i])
 
         pg.display.update()
 
@@ -130,7 +194,7 @@ def menu(player):
 
 
 
-def main(player):
+def main(player,i):
     f = time.monotonic()
 
     pg.init()
@@ -138,15 +202,15 @@ def main(player):
     running = True
     clock = pg.time.Clock()
 
-    pg.mouse.set_visible(False)
+    pg.mouse.set_visible(True)
 
     resolution = 3
     size_map = 35
-
-    maxcoo = 54
-    minicoo = 1
-
+    
     nbcases = 55
+    
+    maxcoo = nbcases-1
+    minicoo = 1
 
     rotate_speed = 0.002
     move_speed = 0.008
@@ -162,7 +226,14 @@ def main(player):
     sky = pg.surfarray.array3d(pg.transform.scale(sky,(360,halfvres*2)))
     #tableau 3d de couleur de l'image
     floor = pg.surfarray.array3d(pg.image.load('sprites/Circuit.png'))
-
+    
+    size = 20
+    
+    opponent = pg.image.load('sprites/RedCarBack.png')
+    opponent = pg.transform.scale(opponent,(opponent.get_width()*size,opponent.get_height()*size))
+    opp_size = np.asanyarray(opponent.get_size())
+    opp_x , opp_y = 5,5
+    
     map = pg.image.load('sprites/Circuit.png')
     map = pg.transform.scale(map,(map.get_width()/nbcases*size_map,map.get_height()/nbcases*size_map))
     rec_map = (map.get_width(),map.get_height())
@@ -176,10 +247,35 @@ def main(player):
 
     frame = np.ones([hres, halfvres*2, 3])
 
+    color_minimap=[(0,168,243),(114,8,153),(236,28,36),(14,209,69),(255,242,0),(255,127,39)]
+    
+    score = 0
+    
     while running:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
+                
+
+        angle = np.arctan((opp_y-posy)/(opp_x-posx))
+        
+        if abs(posx+np.cos(angle)-opp_x) > abs(posx - opp_x):
+            angle = (angle - np.pi)%(2*np.pi)
+            
+        anglediff = (rot-angle)%(2*np.pi)
+        
+        if anglediff > 11*np.pi/6 or anglediff < np.pi/6:
+            dist = np.sqrt((posx - opp_x)**2 + (posy-opp_y)**2)
+            cos2 = np.cos(anglediff)
+            scaling = min(1/dist, 2)/cos2
+            
+            vert = screen.get_height() + screen.get_height()*scaling - scaling*opp_size[1]/2
+            hor = screen.get_width()/2 - screen.get_width()*np.sin(anglediff) - scaling*opp_size[0]/2
+            
+            opp_surf = pg.transform.scale(opponent, scaling*opp_size)
+            
+            screen.blit(opp_surf, (hor,vert))
+            
 
         frame = new_frame(posx,posy,rot,frame,sky,floor,shade,hres,halfvres,mod,nbcases)
 
@@ -188,21 +284,24 @@ def main(player):
 
         fps = int(clock.get_fps())
 
-        score = int((time.monotonic()-f)//0.8)
+        if time.monotonic()-f >= 2:
+            score += 1
+            f = time.monotonic()
         
         texte = font.render("score : "+str(score),1,(0,0,0))
 
         #hotbar
         pg.display.set_caption("Infinit Racer / fps: "+str(fps))
         pg.display.set_icon(icon)
+        
         #screen
         screen.blit(surface, (0,0))
         screen.blit(map,(0,0))
-        screen.blit(texte,(screen.get_width()-texte.get_width(),0))
+        screen.blit(texte,(screen.get_width()-texte.get_width()-10,10))
         
         size_carree = 4
         
-        pg.draw.rect(screen,(0,255,0),((((posx)*rec_map[0])-size_carree//2)//nbcases,(((posy)*rec_map[1])-size_carree//2)//nbcases,size_carree,size_carree))
+        pg.draw.rect(screen,(color_minimap[i]),((((posx)*rec_map[0])-size_carree//2)//nbcases,(((posy)*rec_map[1])-size_carree//2)//nbcases,size_carree,size_carree))
         
         player.sprite.set_colorkey((255,255,255))
 
@@ -210,6 +309,8 @@ def main(player):
         pg.display.update()
 
         posx,posy,rot = movement(posx,posy,rot,pg.key.get_pressed(), clock.tick(),maxcoo,minicoo,rotate_speed,move_speed,player)
+
+
 
 def movement(posx,posy,rot,keys,et,max,mini,rotate,speed,player):
     #mouvement de caméra
@@ -233,13 +334,15 @@ def movement(posx,posy,rot,keys,et,max,mini,rotate,speed,player):
         print(str(posx)+" "+str(posy)+" "+str(rot))
     return posx,posy,rot
 
+
+
 @njit()
 def new_frame(posx,posy,rot,frame,sky,floor,shade,hres,halfvres,mod,max):
     #boucle sur la resolution
     for i in range(hres):
             rot_i = rot + np.deg2rad(i/mod - 30)
             sin, cos, cos2 = np.sin(rot_i), np.cos(rot_i), np.cos(np.deg2rad(i/mod - 30))
-            frame[i][:] = sky[int(np.rad2deg(rot_i)%359)][:]/255
+            frame[i][:] = sky[int(np.rad2deg(rot_i)%360)][:]/255
             for j in range(halfvres):
                 n = (halfvres/(halfvres-j))/cos2
                 x,y = posx + cos*n, posy + sin*n
@@ -252,7 +355,6 @@ def new_frame(posx,posy,rot,frame,sky,floor,shade,hres,halfvres,mod,max):
     return frame
 
 if __name__ == '__main__':
-    player = Car("sprites/BlueCar.png","sprites/BlueCarBack.png","sprites/BlueCarRight.png","sprites/BlueCarLeft.png",20)
-    menu(player)
+    menu()
     pg.quit()
     exit()
