@@ -227,12 +227,12 @@ def main(player,i):
     #tableau 3d de couleur de l'image
     floor = pg.surfarray.array3d(pg.image.load('sprites/Circuit.png'))
     
-    size = 20
+    size = 50
     
     opponent = pg.image.load('sprites/RedCarBack.png')
     opponent = pg.transform.scale(opponent,(opponent.get_width()*size,opponent.get_height()*size))
     opp_size = np.asanyarray(opponent.get_size())
-    opp_x , opp_y = 5,5
+    opp_x, opp_y = 10, 10
     
     map = pg.image.load('sprites/Circuit.png')
     map = pg.transform.scale(map,(map.get_width()/nbcases*size_map,map.get_height()/nbcases*size_map))
@@ -255,27 +255,6 @@ def main(player,i):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
-                
-
-        angle = np.arctan((opp_y-posy)/(opp_x-posx))
-        
-        if abs(posx+np.cos(angle)-opp_x) > abs(posx - opp_x):
-            angle = (angle - np.pi)%(2*np.pi)
-            
-        anglediff = (rot-angle)%(2*np.pi)
-        
-        if anglediff > 11*np.pi/6 or anglediff < np.pi/6:
-            dist = np.sqrt((posx - opp_x)**2 + (posy-opp_y)**2)
-            cos2 = np.cos(anglediff)
-            scaling = min(1/dist, 2)/cos2
-            
-            vert = screen.get_height() + screen.get_height()*scaling - scaling*opp_size[1]/2
-            hor = screen.get_width()/2 - screen.get_width()*np.sin(anglediff) - scaling*opp_size[0]/2
-            
-            opp_surf = pg.transform.scale(opponent, scaling*opp_size)
-            
-            screen.blit(opp_surf, (hor,vert))
-            
 
         frame = new_frame(posx,posy,rot,frame,sky,floor,shade,hres,halfvres,mod,nbcases)
 
@@ -304,6 +283,25 @@ def main(player,i):
         pg.draw.rect(screen,(color_minimap[i]),((((posx)*rec_map[0])-size_carree//2)//nbcases,(((posy)*rec_map[1])-size_carree//2)//nbcases,size_carree,size_carree))
         
         player.sprite.set_colorkey((255,255,255))
+        
+        angle = np.arctan((opp_y-posy)/(opp_x-posx))
+        
+        if abs(posx+np.cos(angle)-opp_x) > abs(posx - opp_x):
+            angle = (angle - np.pi)%(2*np.pi)
+            
+        anglediff = (rot-angle)%(2*np.pi)
+        
+        if anglediff > 11*np.pi/6 or anglediff < np.pi/6:
+            dist = np.sqrt((posx - opp_x)**2 + (posy-opp_y)**2)
+            cos2 = np.cos(anglediff)
+            scaling = min(1/dist, 2)/cos2
+            
+            vert = screen.get_height() + screen.get_height()*scaling
+            hor = screen.get_width()//2 - screen.get_width()*np.sin(anglediff)
+            
+            opp_surf = pg.transform.scale(opponent, scaling*opp_size)
+            
+            screen.blit(opp_surf, (vert, hor))
 
         screen.blit(player.sprite,(int(screen.get_width()/2-(player.sprite.get_width()/2)),int(screen.get_height()/4)*3-(player.sprite.get_height()/4)))
         pg.display.update()
