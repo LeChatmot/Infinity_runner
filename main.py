@@ -1,4 +1,7 @@
+from cgitb import reset
+import re
 from socket import socket
+from tracemalloc import reset_peak
 from kandinsky import display
 import time
 import pygame as pg
@@ -191,8 +194,74 @@ def menu():
         pg.display.update()
 
     pg.quit()
-
-
+    
+def fonction_option(screen):
+    pass
+    
+def pause_menu(player1,screen,pause1,position,posiX,posiY,rota):
+    #255, 195, 0 
+    screen.fill((231, 76, 60))
+    
+    option_button  = pg.image.load("sprites/Menu_Option.png")
+    option_pressed = False
+    rect_option = option_button.get_rect()
+    rect_option.topleft = (screen.get_width()/4-option_button.get_width()/2,screen.get_height()/4-option_button.get_height()/2)
+    
+    quit_button = pg.image.load("sprites/Menu_Quit.png")
+    quit_pressed = False
+    rect_quit = quit_button.get_rect()
+    rect_quit.topleft = (screen.get_width()/4*3-quit_button.get_width()/2,screen.get_height()/4-quit_button.get_height()/2)
+    
+    reset_button = pg.image.load("sprites/Menu_Reset.png")
+    reset_pressed = False
+    rect_reset = reset_button.get_rect()
+    rect_reset.topleft = (screen.get_width()/4*2-reset_button.get_width()/2,screen.get_height()/4-reset_button.get_height()/2)
+    
+    while pause1:
+        
+        pos = pg.mouse.get_pos()
+        
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                running = False
+                
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE and pause1:
+                    pause1 = False
+                    
+        if rect_option.collidepoint(pos):
+            if pg.mouse.get_pressed()[0] == 1 and option_pressed == False:
+                option_pressed = True
+                fonction_option(screen)
+                
+        if rect_quit.collidepoint(pos):
+            if pg.mouse.get_pressed()[0] == 1 and quit_pressed == False:
+                quit_pressed = True
+                pause1 = False
+                pg.quit()
+                exit()
+        
+        if rect_reset.collidepoint(pos):
+            if pg.mouse.get_pressed()[0] == 1 and reset_pressed == False:
+                reset_pressed = True
+                return False,position[0],position[1],position[2]
+                
+        if pg.mouse.get_pressed()[0] == 0 and option_pressed or quit_pressed or reset_pressed:
+            option_pressed = False
+            reset_pressed = False
+            quit_pressed = False
+        
+        screen.fill((19, 141, 117))
+        
+        screen.blit(option_button,(screen.get_width()/4-option_button.get_width()/2,screen.get_height()/4-option_button.get_height()/2))
+        
+        screen.blit(quit_button,(screen.get_width()/4*3-quit_button.get_width()/2,screen.get_height()/4-quit_button.get_height()/2))
+        
+        screen.blit(reset_button,(screen.get_width()/4*2-reset_button.get_width()/2,screen.get_height()/4-reset_button.get_height()/2))
+        
+        pg.display.update()
+        
+    return pause1,posiX,posiY,rota
 
 def main(player,i):
     f = time.monotonic()
@@ -201,6 +270,8 @@ def main(player,i):
     screen = pg.display.set_mode((0,0),pg.FULLSCREEN)
     running = True
     clock = pg.time.Clock()
+    
+    pause = False
 
     pg.mouse.set_visible(True)
 
@@ -220,6 +291,7 @@ def main(player,i):
 
     mod = hres/60
     posx, posy, rot = 51,39.3,-1.57
+    posBase = (posx,posy,rot)
 
     sky = pg.image.load('sprites/fond.png')
     #tableau 3d de couleur de l'image
@@ -252,61 +324,68 @@ def main(player,i):
     score = 0
     
     while running:
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                running = False
+        if not pause:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    running = False
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE and not pause:
+                        pause = True
 
-        frame = new_frame(posx,posy,rot,frame,sky,floor,shade,hres,halfvres,mod,nbcases)
+            frame = new_frame(posx,posy,rot,frame,sky,floor,shade,hres,halfvres,mod,nbcases)
 
-        surface = pg.surfarray.make_surface(frame*255)
-        surface = pg.transform.scale(surface, (screen.get_width(),screen.get_height()))
+            surface = pg.surfarray.make_surface(frame*255)
+            surface = pg.transform.scale(surface, (screen.get_width(),screen.get_height()))
 
-        fps = int(clock.get_fps())
+            fps = int(clock.get_fps())
 
-        if time.monotonic()-f >= 2:
-            score += 1
-            f = time.monotonic()
-        
-        texte = font.render("score : "+str(score),1,(0,0,0))
-
-        #hotbar
-        pg.display.set_caption("Infinit Racer / fps: "+str(fps))
-        pg.display.set_icon(icon)
-        
-        #screen
-        screen.blit(surface, (0,0))
-        screen.blit(map,(0,0))
-        screen.blit(texte,(screen.get_width()-texte.get_width()-10,10))
-        
-        size_carree = 4
-        
-        pg.draw.rect(screen,(color_minimap[i]),((((posx)*rec_map[0])-size_carree//2)//nbcases,(((posy)*rec_map[1])-size_carree//2)//nbcases,size_carree,size_carree))
-        
-        player.sprite.set_colorkey((255,255,255))
-        
-        angle = np.arctan((opp_y-posy)/(opp_x-posx))
-        
-        if abs(posx+np.cos(angle)-opp_x) > abs(posx - opp_x):
-            angle = (angle - np.pi)%(2*np.pi)
+            if time.monotonic()-f >= 2:
+                score += 1
+                f = time.monotonic()
             
-        anglediff = (rot-angle)%(2*np.pi)
+            texte = font.render("score : "+str(score),1,(0,0,0))
+
+            #hotbar
+            pg.display.set_caption("Infinit Racer / fps: "+str(fps))
+            pg.display.set_icon(icon)
+            
+            #screen
+            screen.blit(surface, (0,0))
+            screen.blit(map,(0,0))
+            screen.blit(texte,(screen.get_width()-texte.get_width()-10,10))
+            
+            size_carree = 4
+            
+            pg.draw.rect(screen,(color_minimap[i]),((((posx)*rec_map[0])-size_carree//2)//nbcases,(((posy)*rec_map[1])-size_carree//2)//nbcases,size_carree,size_carree))
+            
+            player.sprite.set_colorkey((255,255,255))
+            
+            angle = np.arctan((opp_y-posy)/(opp_x-posx))
+            
+            if abs(posx+np.cos(angle)-opp_x) > abs(posx - opp_x):
+                angle = (angle - np.pi)%(2*np.pi)
+                
+            anglediff = (rot-angle)%(2*np.pi)
+            
+            if anglediff > 11*np.pi/6 or anglediff < np.pi/6:
+                dist = np.sqrt((posx - opp_x)**2 + (posy-opp_y)**2)
+                cos2 = np.cos(anglediff)
+                scaling = min(1/dist, 2)/cos2
+                
+                vert = screen.get_height() + screen.get_height()*scaling
+                hor = screen.get_width()//2 - screen.get_width()*np.sin(anglediff)
+                
+                opp_surf = pg.transform.scale(opponent, scaling*opp_size)
+                
+                screen.blit(opp_surf, (screen.get_height()-hor,screen.get_width()-vert))
+
+            screen.blit(player.sprite,(int(screen.get_width()/2-(player.sprite.get_width()/2)),int(screen.get_height()/4)*3-(player.sprite.get_height()/4)))
+            pg.display.update()
+
+            posx,posy,rot = movement(posx,posy,rot,pg.key.get_pressed(), clock.tick(),maxcoo,minicoo,rotate_speed,move_speed,player)
         
-        if anglediff > 11*np.pi/6 or anglediff < np.pi/6:
-            dist = np.sqrt((posx - opp_x)**2 + (posy-opp_y)**2)
-            cos2 = np.cos(anglediff)
-            scaling = min(1/dist, 2)/cos2
-            
-            vert = screen.get_height() + screen.get_height()*scaling
-            hor = screen.get_width()//2 - screen.get_width()*np.sin(anglediff)
-            
-            opp_surf = pg.transform.scale(opponent, scaling*opp_size)
-            
-            screen.blit(opp_surf, (vert, hor))
-
-        screen.blit(player.sprite,(int(screen.get_width()/2-(player.sprite.get_width()/2)),int(screen.get_height()/4)*3-(player.sprite.get_height()/4)))
-        pg.display.update()
-
-        posx,posy,rot = movement(posx,posy,rot,pg.key.get_pressed(), clock.tick(),maxcoo,minicoo,rotate_speed,move_speed,player)
+        else:
+            pause,posx,posy,rot = pause_menu(player,screen,pause,posBase,posx,posy,rot)
 
 
 
